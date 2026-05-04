@@ -62,19 +62,21 @@
       border-radius: 26px;
       overflow: hidden;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
-      padding-top: 6%;
+      justify-content: center;
     }
 
     .player-label {
+      position: absolute;
+      top: 7%;
+      left: 50%;
+      transform: translateX(-50%);
       font-size: clamp(20px, 4vh, 32px);
       font-weight: 400;
       letter-spacing: 0.01em;
       color: var(--ink);
-      margin-bottom: 0;
       pointer-events: none;
+      white-space: nowrap;
     }
 
     .life {
@@ -87,7 +89,6 @@
       pointer-events: none;
       transition: transform 0.16s cubic-bezier(0.2, 0.8, 0.4, 1);
       will-change: transform;
-      margin-top: 4%;
     }
     .life.bump { transform: scale(1.07); }
 
@@ -249,6 +250,13 @@
     </div>
   </section>
 
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
