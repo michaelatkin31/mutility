@@ -1,4 +1,4 @@
-"""Generate MTG Life icons: a die showing 20 pips arranged as a d20 hint, simplified to a chunky 6-pip face on a dark rounded square."""
+"""Generate Mutility icons: a chunky '20' on a dark rounded square."""
 from PIL import Image, ImageDraw, ImageFont
 
 BG = (10, 10, 10, 255)
