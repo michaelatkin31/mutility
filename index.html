@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Life" />
+  <meta name="theme-color" content="#0a0a0a" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <title>MTG Life</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #0a0a0a;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+      color: #fff;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    /* Player zones */
+    .player {
+      flex: 1 1 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .player.top {
+      background: #b53231;
+      transform: rotate(180deg);
+      transform-origin: center;
+    }
+    .player.bottom {
+      background: #2c5e8f;
+    }
+
+    .life {
+      font-size: clamp(96px, 28vh, 220px);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: rgba(255,255,255,0.96);
+      font-variant-numeric: tabular-nums;
+      pointer-events: none;
+      transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.4, 1);
+      will-change: transform;
+    }
+    .life.bump { transform: scale(1.08); }
+
+    /* Tap zones cover the player area in two halves */
+    .tap-zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+      cursor: pointer;
+    }
+    .tap-zone.minus { left: 0; }
+    .tap-zone.plus { right: 0; }
+
+    .tap-hint {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 28px;
+      font-weight: 300;
+      color: rgba(255,255,255,0.18);
+      pointer-events: none;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .tap-hint.minus-hint { left: 22px; }
+    .tap-hint.plus-hint { right: 22px; }
+    .tap-zone:active + .tap-hint,
+    .tap-zone:active ~ .tap-hint {
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* Middle bar */
+    .middle {
+      flex: 0 0 auto;
+      height: 84px;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+      z-index: 5;
+      transition: height 0.25s cubic-bezier(0.2, 0.8, 0.4, 1);
+    }
+    .middle.open { height: 84px; }
+
+    .gear-btn {
+      appearance: none;
+      border: none;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.85);
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.3s cubic-bezier(0.2, 0.8, 0.4, 1);
+      flex-shrink: 0;
+    }
+    .gear-btn:active { background: rgba(255,255,255,0.14); }
+    .gear-btn svg { width: 26px; height: 26px; }
+    .middle.open .gear-btn { transform: rotate(90deg); }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-width 0.3s cubic-bezier(0.2, 0.8, 0.4, 1), opacity 0.2s, margin-left 0.3s;
+      margin-left: 0;
+    }
+    .middle.open .actions {
+      max-width: 360px;
+      opacity: 1;
+      margin-left: 14px;
+    }
+
+    .action-btn {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: transparent;
+      color: rgba(255,255,255,0.9);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 12px 18px;
+      border-radius: 999px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .action-btn:active {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.32);
+    }
+    .action-btn[disabled] { opacity: 0.4; pointer-events: none; }
+
+    /* Dice */
+    .die {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 28vmin;
+      height: 28vmin;
+      max-width: 200px;
+      max-height: 200px;
+      transform: translate(-50%, -50%) scale(0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.3s cubic-bezier(0.2, 0.8, 0.4, 1);
+      z-index: 4;
+    }
+    .die.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .die.rolling { animation: shake 0.18s linear infinite; }
+    .die.winner {
+      animation: pulse 0.6s ease-out 2;
+    }
+    .die svg { width: 100%; height: 100%; display: block; }
+    .die-face {
+      fill: #f6f3ec;
+      stroke: rgba(0,0,0,0.18);
+      stroke-width: 1.5;
+    }
+    .die-pip { fill: #1a1a1a; }
+
+    @keyframes shake {
+      0%   { transform: translate(-50%, -50%) scale(1) rotate(-4deg); }
+      50%  { transform: translate(-50%, -50%) scale(1) rotate(4deg); }
+      100% { transform: translate(-50%, -50%) scale(1) rotate(-4deg); }
+    }
+    @keyframes pulse {
+      0%   { filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
+      40%  { filter: drop-shadow(0 0 18px rgba(255,255,255,0.85)); }
+      100% { filter: drop-shadow(0 0 0 rgba(255,255,255,0)); }
+    }
+
+    /* Brief flash on life change */
+    .player.flash::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.06);
+      pointer-events: none;
+      animation: flashFade 0.32s ease-out forwards;
+    }
+    @keyframes flashFade {
+      from { opacity: 1; }
+      to   { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <section class="player top" id="player-top" aria-label="Top player">
+    <div class="tap-zone minus" data-player="top" data-delta="-1"></div>
+    <div class="tap-zone plus" data-player="top" data-delta="1"></div>
+    <span class="tap-hint minus-hint">−</span>
+    <span class="tap-hint plus-hint">+</span>
+    <div class="life" id="life-top">20</div>
+    <div class="die" id="die-top" aria-hidden="true"></div>
+  </section>
+
+  <div class="middle" id="middle">
+    <button class="gear-btn" id="gear" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+    <div class="actions" id="actions">
+      <button class="action-btn" id="reset">Reset</button>
+      <button class="action-btn" id="roll">Roll dice</button>
+    </div>
+  </div>
+
+  <section class="player bottom" id="player-bottom" aria-label="Bottom player">
+    <div class="tap-zone minus" data-player="bottom" data-delta="-1"></div>
+    <div class="tap-zone plus" data-player="bottom" data-delta="1"></div>
+    <span class="tap-hint minus-hint">−</span>
+    <span class="tap-hint plus-hint">+</span>
+    <div class="life" id="life-bottom">20</div>
+    <div class="die" id="die-bottom" aria-hidden="true"></div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
